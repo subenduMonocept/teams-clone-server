@@ -4,10 +4,8 @@ import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 
-// Configure multer for file storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Create uploads directory if it doesn't exist
     if (!fs.existsSync("uploads")) {
       fs.mkdirSync("uploads");
     }
@@ -19,7 +17,6 @@ const storage = multer.diskStorage({
   },
 });
 
-// File filter to accept only certain file types
 const fileFilter = (
   req: Request,
   file: Express.Multer.File,
