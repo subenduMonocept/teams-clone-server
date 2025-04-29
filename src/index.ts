@@ -8,7 +8,6 @@ import connectDB from "./config/db";
 import bodyParser from "body-parser";
 import http from "http";
 import { initializeSocket } from "./sockets";
-import uploadRoutes from "./routes/upload";
 
 dotenv.config();
 connectDB();
@@ -28,7 +27,6 @@ app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
 app.set("trust proxy", true);
 
 app.use("/auth", authRoutes);
-app.use("/upload", uploadRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });

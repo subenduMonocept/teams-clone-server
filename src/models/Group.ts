@@ -22,7 +22,6 @@ const GroupSchema: Schema = new Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-// Update the updatedAt timestamp before saving
 GroupSchema.pre("save", function (next) {
   this.updatedAt = new Date();
   next();

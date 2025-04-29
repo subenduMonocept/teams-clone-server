@@ -35,7 +35,7 @@ const onlineUsers = new Map<string, string>();
 export const initializeSocket = (httpServer: any) => {
   const io = new Server(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL || "http://localhost:5173",
+      origin: process.env.CLIENT_URL,
       methods: ["GET", "POST"],
       credentials: true,
     },
@@ -73,25 +73,18 @@ export const initializeSocket = (httpServer: any) => {
     console.log(`User connected: ${userId}`);
     onlineUsers.set(userId, socket.id);
 
-    // Join user's personal room
     socket.join(userId);
-
-    // Notify all connected clients about this user's online status
     io.emit("userOnline", { userId });
 
-    // Send current online users to the newly connected user
     const onlineUserIds = Array.from(onlineUsers.keys());
     socket.emit("onlineUsers", { users: onlineUserIds });
 
-    // Handle disconnection
     socket.on("disconnect", () => {
       console.log(`User disconnected: ${userId}`);
       onlineUsers.delete(userId);
-      // Notify all clients about this user's offline status
       io.emit("userOffline", { userId });
     });
 
-    // Handle loading messages
     socket.on("loadMessages", async (payload: LoadMessagesPayload) => {
       try {
         if (!socket.user?.userId) {
@@ -122,7 +115,6 @@ export const initializeSocket = (httpServer: any) => {
       }
     });
 
-    // Handle private messages
     socket.on("sendMessage", async (payload: MessagePayload) => {
       try {
         if (!socket.user?.userId) {
@@ -147,7 +139,6 @@ export const initializeSocket = (httpServer: any) => {
         const message = new Message(messageData);
         await message.save();
 
-        // Emit to specific receiver or group
         if (payload.receiverId) {
           io.to(payload.receiverId).emit("newMessage", message);
         } else if (payload.groupId) {
@@ -159,7 +150,6 @@ export const initializeSocket = (httpServer: any) => {
       }
     });
 
-    // Handle typing status
     socket.on("typing", (payload: TypingPayload) => {
       if (!socket.user?.userId) {
         socket.emit("error", "Unauthorized");
@@ -179,7 +169,6 @@ export const initializeSocket = (httpServer: any) => {
       }
     });
 
-    // Handle group joining
     socket.on("joinGroup", (groupId: string) => {
       if (!socket.user?.userId) {
         socket.emit("error", "Unauthorized");
@@ -193,7 +182,6 @@ export const initializeSocket = (httpServer: any) => {
       });
     });
 
-    // Handle group leaving
     socket.on("leaveGroup", (groupId: string) => {
       if (!socket.user?.userId) {
         socket.emit("error", "Unauthorized");
@@ -207,7 +195,6 @@ export const initializeSocket = (httpServer: any) => {
       });
     });
 
-    // Handle calls
     socket.on("call", (payload: CallPayload) => {
       if (!socket.user?.userId) {
         socket.emit("error", "Unauthorized");

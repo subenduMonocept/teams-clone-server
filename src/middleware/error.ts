@@ -53,7 +53,6 @@ export default function (
       stack: err.stack,
     });
   } else {
-    // Production mode
     if (err.isOperational) {
       logger.error("Operational Error 💥", {
         error: err,
@@ -66,7 +65,6 @@ export default function (
         message: err.message,
       });
     } else {
-      // Programming or unknown error
       logger.error("Programming Error 💥", {
         error: err,
         path: req.path,
