@@ -1,8 +1,8 @@
 import { Server } from "socket.io";
-import { verifyToken } from "../middleware/auth";
 import { AuthenticatedSocket } from "../types/socket";
 import Message, { IMessageBase } from "../models/Message";
 import mongoose from "mongoose";
+import { verifyAccessToken } from "../services/tokenService";
 
 interface MessagePayload {
   content: string;
@@ -51,7 +51,7 @@ export const initializeSocket = (httpServer: any) => {
         return next(new Error("Authentication error"));
       }
 
-      const decoded = await verifyToken(token);
+      const decoded = await verifyAccessToken(token);
       if (!decoded || !decoded.userId) {
         return next(new Error("Invalid token"));
       }

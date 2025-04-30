@@ -1,9 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-
-export const verifyToken = (token: string): jwt.JwtPayload => {
-  return jwt.verify(token, process.env.JWT_SECRET!) as jwt.JwtPayload;
-};
+import { verifyAccessToken } from "../services/tokenService";
 
 export const authenticate = (
   req: Request,
@@ -17,7 +14,7 @@ export const authenticate = (
   }
 
   try {
-    req.user = verifyToken(token);
+    req.user = verifyAccessToken(token);
     next();
   } catch (error) {
     res.status(401).json({ error: "Invalid token" });

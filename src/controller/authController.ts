@@ -49,7 +49,7 @@ export const login = async (
       return sendError(res, 401, "Invalid credentials", "AuthError");
     }
 
-    const { accessToken } = generateTokens(user._id, user.email);
+    const { accessToken, refreshToken } = generateTokens(user._id, user.email);
     await user.save();
 
     const { password: _, ...userWithoutPassword } = user.toObject();
@@ -58,6 +58,7 @@ export const login = async (
       message: "Login successful",
       user: userWithoutPassword,
       accessToken,
+      refreshToken,
     });
   } catch (err) {
     next(err);
