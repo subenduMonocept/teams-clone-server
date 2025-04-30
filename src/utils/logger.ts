@@ -50,7 +50,7 @@ export const logError = (error: Error, req?: any) => {
 export const logInfo = (message: string, meta?: any) => {
   logger.info(message, {
     ...meta,
-    timestamp: new Date().toISOString(),
+    timestamp: new Date().toLocaleTimeString(),
   });
 };
 

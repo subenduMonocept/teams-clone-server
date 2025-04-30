@@ -5,6 +5,7 @@ import {
   deleteUser,
   updateUser,
   getAllUsers,
+  refreshToken,
 } from "../controller/authController";
 import { loginLimiter, apiLimiter } from "../middleware/rateLimiter";
 import {
@@ -31,5 +32,7 @@ router.put(
 );
 
 router.get("/get-all-users", apiLimiter, getAllUsers);
+
+router.post("/refresh-token", refreshToken);
 
 export default router;

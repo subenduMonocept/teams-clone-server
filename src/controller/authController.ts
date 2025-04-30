@@ -124,33 +124,34 @@ export const getAllUsers = async (
   }
 };
 
-export const refreshToken = async (req: Request, res: Response) => {
+export const refreshToken = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
-    const token = req.cookies.refreshToken;
-    if (!token)
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
       return sendError(res, 401, "Refresh token not found", "AuthError");
+    }
 
     const decoded = jwt.verify(
-      token,
+      refreshToken,
       process.env.JWT_REFRESH_TOKEN_SECRET!
     ) as any;
 
     const user = await User.findById(decoded.userId);
-    if (!user) return sendError(res, 401, "Invalid refresh token", "AuthError");
+    if (!user) {
+      return sendError(res, 401, "Invalid refresh token", "AuthError");
+    }
 
     const { accessToken, refreshToken: newRefreshToken } = generateTokens(
       user._id,
       user.email
     );
-
-    res
-      .cookie("refreshToken", newRefreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      })
-      .json({ accessToken });
+    res.status(200).json({
+      accessToken,
+      refreshToken: newRefreshToken,
+    });
   } catch (err) {
     return sendError(
       res,

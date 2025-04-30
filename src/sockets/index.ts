@@ -70,7 +70,8 @@ export const initializeSocket = (httpServer: any) => {
     }
 
     const userId = socket.user.userId;
-    console.log(`User connected: ${userId}`);
+    const currentTime = new Date().toLocaleTimeString();
+    console.log(`User connected: ${userId} at ${currentTime}`);
     onlineUsers.set(userId, socket.id);
 
     socket.join(userId);
