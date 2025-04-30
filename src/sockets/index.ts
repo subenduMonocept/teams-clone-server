@@ -3,6 +3,7 @@ import { AuthenticatedSocket } from "../types/socket";
 import Message, { IMessageBase } from "../models/Message";
 import mongoose from "mongoose";
 import { verifyAccessToken } from "../services/tokenService";
+import Group from "../models/Group";
 
 interface MessagePayload {
   content: string;
@@ -32,10 +33,12 @@ interface LoadMessagesPayload {
 
 const onlineUsers = new Map<string, string>();
 
+const currentTime = new Date().toLocaleTimeString();
+
 export const initializeSocket = (httpServer: any) => {
   const io = new Server(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL,
+      origin: "*",
       methods: ["GET", "POST"],
       credentials: true,
     },
@@ -70,7 +73,6 @@ export const initializeSocket = (httpServer: any) => {
     }
 
     const userId = socket.user.userId;
-    const currentTime = new Date().toLocaleTimeString();
     console.log(`User connected: ${userId} at ${currentTime}`);
     onlineUsers.set(userId, socket.id);
 
@@ -81,7 +83,7 @@ export const initializeSocket = (httpServer: any) => {
     socket.emit("onlineUsers", { users: onlineUserIds });
 
     socket.on("disconnect", () => {
-      console.log(`User disconnected: ${userId}`);
+      console.log(`User disconnected: ${userId} at ${currentTime}`);
       onlineUsers.delete(userId);
       io.emit("userOffline", { userId });
     });
@@ -105,14 +107,14 @@ export const initializeSocket = (httpServer: any) => {
 
         const messages = await Message.find(query)
           .sort({ createdAt: 1 })
-          .populate("sender", "name email")
-          .populate("receiver", "name email")
+          .populate("sender", "name email _id")
+          .populate("receiver", "name email _id")
           .lean();
 
         socket.emit("messagesLoaded", messages);
       } catch (error) {
         console.error("Error loading messages:", error);
-        socket.emit("error", "Failed to load messages");
+        socket.emit("error", { message: "Failed to load messages", code: 500 });
       }
     });
 
@@ -147,7 +149,7 @@ export const initializeSocket = (httpServer: any) => {
         }
       } catch (error) {
         console.error("Error sending message:", error);
-        socket.emit("error", "Failed to send message");
+        socket.emit("error", { message: "Failed to send message", code: 500 });
       }
     });
 
@@ -170,17 +172,41 @@ export const initializeSocket = (httpServer: any) => {
       }
     });
 
-    socket.on("joinGroup", (groupId: string) => {
+    socket.on("joinGroup", async (groupId: string) => {
       if (!socket.user?.userId) {
-        socket.emit("error", "Unauthorized");
+        socket.emit("error", { message: "Unauthorized", code: 401 });
         return;
       }
 
-      socket.join(groupId);
-      io.to(groupId).emit("userJoined", {
-        userId: socket.user.userId,
-        groupId,
-      });
+      try {
+        const group = await Group.findById(groupId).lean();
+
+        if (!group) {
+          socket.emit("error", { message: "Group not found", code: 404 });
+          return;
+        }
+
+        const isMember = group.members.some(
+          (memberId) => memberId.toString() === socket.user!.userId
+        );
+
+        if (!isMember) {
+          socket.emit("error", {
+            message: "Forbidden: Not a group member",
+            code: 403,
+          });
+          return;
+        }
+
+        socket.join(groupId);
+        io.to(groupId).emit("userJoined", {
+          userId: socket.user.userId,
+          groupId,
+        });
+      } catch (err) {
+        console.error("Join group error:", err);
+        socket.emit("error", { message: "Failed to join group", code: 500 });
+      }
     });
 
     socket.on("leaveGroup", (groupId: string) => {
