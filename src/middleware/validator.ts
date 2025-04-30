@@ -12,6 +12,8 @@ export const validateSignup = [
     .withMessage("Please provide a valid email"),
   body("password")
     .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters long")
+    .bail()
     .matches(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
     )
@@ -55,7 +57,13 @@ export const validateUpdateUser = [
 export const validateRequest = (req: any, res: any, next: any) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+    const firstError = errors.array({ onlyFirstError: true })[0];
+    return res.status(400).json({
+      error: {
+        type: firstError.type,
+        msg: firstError.msg,
+      },
+    });
   }
   next();
 };

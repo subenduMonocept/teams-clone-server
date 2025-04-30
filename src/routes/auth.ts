@@ -5,8 +5,6 @@ import {
   deleteUser,
   updateUser,
   getAllUsers,
-  refreshToken,
-  logout,
 } from "../controller/authController";
 import { loginLimiter, apiLimiter } from "../middleware/rateLimiter";
 import {
@@ -21,10 +19,6 @@ const router = express.Router();
 router.post("/signup", apiLimiter, validateSignup, validateRequest, signup);
 
 router.post("/login", loginLimiter, validateLogin, validateRequest, login);
-
-router.post("/refresh-token", apiLimiter, refreshToken);
-
-router.post("/logout", apiLimiter, logout);
 
 router.delete("/delete-user", apiLimiter, deleteUser);
 
