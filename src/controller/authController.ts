@@ -3,6 +3,7 @@ import User from "../models/User";
 import bcrypt from "bcrypt";
 import { generateTokens } from "../services/tokenService";
 import { sendError } from "../utils/sendError";
+import jwt from "jsonwebtoken";
 
 export const signup = async (
   req: Request,
@@ -119,5 +120,42 @@ export const getAllUsers = async (
     res.json(users);
   } catch (err) {
     next(err);
+  }
+};
+
+export const refreshToken = async (req: Request, res: Response) => {
+  try {
+    const token = req.cookies.refreshToken;
+    if (!token)
+      return sendError(res, 401, "Refresh token not found", "AuthError");
+
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_REFRESH_TOKEN_SECRET!
+    ) as any;
+
+    const user = await User.findById(decoded.userId);
+    if (!user) return sendError(res, 401, "Invalid refresh token", "AuthError");
+
+    const { accessToken, refreshToken: newRefreshToken } = generateTokens(
+      user._id,
+      user.email
+    );
+
+    res
+      .cookie("refreshToken", newRefreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      })
+      .json({ accessToken });
+  } catch (err) {
+    return sendError(
+      res,
+      401,
+      "Invalid or expired refresh token",
+      "TokenError"
+    );
   }
 };
