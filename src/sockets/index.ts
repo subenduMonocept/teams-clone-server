@@ -4,6 +4,7 @@ import Message, { IMessageBase } from "../models/Message";
 import mongoose from "mongoose";
 import { verifyAccessToken } from "../services/tokenService";
 import Group from "../models/Group";
+import User from "../models/User";
 
 interface MessagePayload {
   content: string;
@@ -222,22 +223,34 @@ export const initializeSocket = (httpServer: any) => {
       });
     });
 
-    socket.on("call", (payload: CallPayload) => {
+    socket.on("call", async (payload: CallPayload) => {
       if (!socket.user?.userId) {
         socket.emit("error", "Unauthorized");
         return;
       }
 
-      if (payload.receiverId) {
-        io.to(payload.receiverId).emit("call", {
+      try {
+        const caller = await User.findById(socket.user.userId)
+          .select("name email _id")
+          .lean();
+
+        const callData = {
           ...payload,
-          from: socket.user.userId,
-        });
-      } else if (payload.groupId) {
-        io.to(payload.groupId).emit("call", {
-          ...payload,
-          from: socket.user.userId,
-        });
+          from: {
+            _id: caller?._id,
+            name: caller?.name,
+            email: caller?.email,
+          },
+        };
+
+        if (payload.receiverId) {
+          io.to(payload.receiverId).emit("call", callData);
+        } else if (payload.groupId) {
+          io.to(payload.groupId).emit("call", callData);
+        }
+      } catch (err) {
+        console.error("Call event error:", err);
+        socket.emit("error", { message: "Failed to initiate call", code: 500 });
       }
     });
   });
