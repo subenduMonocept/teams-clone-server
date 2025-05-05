@@ -34,8 +34,6 @@ interface LoadMessagesPayload {
 
 const onlineUsers = new Map<string, string>();
 
-const currentTime = new Date().toLocaleTimeString();
-
 export const initializeSocket = (httpServer: any) => {
   const io = new Server(httpServer, {
     cors: {
@@ -74,7 +72,9 @@ export const initializeSocket = (httpServer: any) => {
     }
 
     const userId = socket.user.userId;
-    console.log(`User connected: ${userId} at ${currentTime}`);
+    console.log(
+      `User connected: ${userId} at ${new Date().toLocaleTimeString()}`
+    );
     onlineUsers.set(userId, socket.id);
 
     socket.join(userId);
@@ -84,7 +84,9 @@ export const initializeSocket = (httpServer: any) => {
     socket.emit("onlineUsers", { users: onlineUserIds });
 
     socket.on("disconnect", () => {
-      console.log(`User disconnected: ${userId} at ${currentTime}`);
+      console.log(
+        `User disconnected: ${userId} at ${new Date().toLocaleTimeString()}`
+      );
       onlineUsers.delete(userId);
       io.emit("userOffline", { userId });
     });
